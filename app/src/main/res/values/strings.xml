@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Aquisito</string>
+    <string name="location_title">Ubicación</string>
+    <string name="route_title">Ruta a</string>
+    <string name="config_title">Configuración</string>
+    <string name="content_description_location">pestaña de ubicacion actual</string>
+    <string name="content_description_route">pestaña para Crear rutas</string>
+    <string name="content_description_config">pestaña de ajustes</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+</resources>
