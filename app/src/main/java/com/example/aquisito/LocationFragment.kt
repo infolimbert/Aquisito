@@ -2,6 +2,7 @@ package com.example.aquisito
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.location.Geocoder
 import android.location.Location
 import android.os.Bundle
 import android.os.Looper
@@ -11,6 +12,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.text.intl.Locale
 import androidx.core.content.ContextCompat
 import com.example.aquisito.databinding.FragmentLocationBinding
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -19,6 +21,7 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import java.io.IOException
 
 class LocationFragment : Fragment() {
 
@@ -74,6 +77,8 @@ class LocationFragment : Fragment() {
                 }
     }
 
+
+
     // Implementación para obtener la última ubicación conocida
     private fun getLastKnowLocation() {
         try{
@@ -116,9 +121,48 @@ class LocationFragment : Fragment() {
 
     //Metodo para actualizar la interfaz de usuario con la ubicacion actual
     private fun updateLocationUI(location: Location){
-        val locationText= "Lat: ${location.latitude}, Lng: ${location.longitude}"
-        binding.tvLocation.text = locationText
+        /*val locationText= "Lat: ${location.latitude}, Lng: ${location.longitude}"
+        binding.tvLocation.text = locationText*/
+        convertLocationAddress(location)
     }
+
+
+
+    // Método para convertir la ubicación en una dirección legible
+        private fun convertLocationAddress(location: Location){
+            //geocoder nos permite convertir coordenas en una direccion
+            val geocoder = Geocoder(requireContext(), java.util.Locale.getDefault())
+
+            //intentamos obtener la direccion utilizando el geocoder
+        try {
+                val address = geocoder.getFromLocation(location.latitude, location.longitude, 1)
+
+                //si la lista de direccon no esta vacia
+                if(!address.isNullOrEmpty()){
+                    //obtenemos la primera direccion de la lista
+                    val address = address[0]
+
+                    //construimos una cadena de texto con los componentes de la direccion
+                    val addressText= "${address.thoroughfare}, ${address.locality}, ${address.countryName}"
+
+                    //mostramos la direecon en un textView (tvlocation) en la interfaz de usuario
+                    binding.tvLocation.text = addressText
+                }else{
+                    // si no se encuentra ninguna direecon, mostramos latitud longitud
+                    //"Lat: ${location.latitude}, Lng: ${location.longitude}"
+                    binding.tvLocation.text = "No hay direccion "
+                     }
+
+            }catch (e: IOException){
+                // En caso de error, mostramos un mensaje
+                binding.tvLocation.text = "Error al obtener la direccion"
+        }
+
+    }
+
+
+
+
 
     // Limpia el binding para evitar fugas de memoria
     override fun onDestroyView() {
