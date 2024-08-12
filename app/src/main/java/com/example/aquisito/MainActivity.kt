@@ -15,23 +15,26 @@ class MainActivity : AppCompatActivity() {
     private lateinit var mFragmentManager: FragmentManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
 
+        super.onCreate(savedInstanceState)
         mBinding= ActivityMainBinding.inflate(layoutInflater)
         setContentView(mBinding.root)
-
 
         // Configuración de la barra de herramientas
         setSupportActionBar(mBinding.toolbar)
 
         // Configurar la vista de navegación inferior
-        val bottomNavigationView = mBinding.bottomNav
+       // val bottomNavigationView = mBinding.bottomNav
 
         // Configurar el listener de navegación y los fragmentos
         setupBottomNav()
 
         // Establecer el elemento seleccionado inicial y el título
-        bottomNavigationView.selectedItemId = R.id.action_location
+        /*bottomNavigationView.selectedItemId = R.id.action_location
+        mBinding.toolbar.title = getString(R.string.location_title)
+        supportActionBar?.title = mBinding.toolbar.title*/
+
+        mBinding.bottomNav.selectedItemId = R.id.action_location
         mBinding.toolbar.title = getString(R.string.location_title)
         supportActionBar?.title = mBinding.toolbar.title
 
@@ -45,55 +48,79 @@ class MainActivity : AppCompatActivity() {
         val routeFragment = RouteFragment()
         val configFragment = ConfigFragment()
 
-        mActiveFragment = LocationFragment()
+        //mActiveFragment = LocationFragment() //inicializa con el fragmento inicial
 
-        // Añadir todos los fragmentos, ocultando los que no están activos
+    /*    // Añadir todos los fragmentos, ocultando los que no están activos
         mFragmentManager.beginTransaction()
             .add(R.id.hostFragment, configFragment, ConfigFragment::class.java.name)
-            .detach(configFragment).commit()
+            .hide(configFragment).commit()
 
         mFragmentManager.beginTransaction()
             .add(R.id.hostFragment, routeFragment, RouteFragment::class.java.name)
-            .detach(routeFragment).commit()
+            .hide(routeFragment).commit()
 
         mFragmentManager.beginTransaction()
             .add(R.id.hostFragment, locationFragment, LocationFragment::class.java.name)
-            .commit()
+            .commit()*/
+
+        mBinding.bottomNav.setOnItemSelectedListener {
+            when(it.itemId){
+                R.id.action_location->{
+                    replaceFragment(locationFragment, getString(R.string.location_title))
+                    true
+                }
+                R.id.action_route ->{
+                    replaceFragment(routeFragment,getString(R.string.route_title))
+                    true
+                }
+                R.id.action_config->{
+                    replaceFragment(configFragment,getString(R.string.config_title))
+                    true
+                }
+                else-> false
+            }
+
+        }
 
 
-
-            mBinding.bottomNav.setOnItemSelectedListener {
+            /*mBinding.bottomNav.setOnItemSelectedListener {
                 when(it.itemId){
                     R.id.action_location -> {
-                        mFragmentManager.beginTransaction().detach(mActiveFragment).attach(locationFragment).commit()
+                        mFragmentManager.beginTransaction().hide(mActiveFragment).show(locationFragment).commit()
                         mActiveFragment = locationFragment
+
                         // Sincronizar el título de ActionBar con el título de Toolbar
                         mBinding.toolbar.title = getString(R.string.location_title)
-                        supportActionBar?.title = mBinding.toolbar.title
                         true
                     }
 
                     R.id.action_route -> {
-                        mFragmentManager.beginTransaction().detach(mActiveFragment).attach(routeFragment).commit()
+                        mFragmentManager.beginTransaction().hide(mActiveFragment).show(routeFragment).commit()
                         mActiveFragment = routeFragment
                         // Sincronizar el título de ActionBar con el título de Toolbar
                         mBinding.toolbar.title = getString(R.string.route_title)
-                        supportActionBar?.title = mBinding.toolbar.title
                         true
                     }
 
                     R.id.action_config -> {
-                        mFragmentManager.beginTransaction().detach(mActiveFragment).attach(configFragment).commit()
+                        mFragmentManager.beginTransaction().hide(mActiveFragment).show(configFragment).commit()
                         mActiveFragment = configFragment
                         // Sincronizar el título de ActionBar con el título de Toolbar
                         mBinding.toolbar.title = getString(R.string.config_title)
-                        supportActionBar?.title = mBinding.toolbar.title
                         true
                     }
                     else -> false
 
                 }
-            }
+            }*/
 
+    }
+
+    private fun replaceFragment(fragment: Fragment, title: String) {
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.hostFragment, fragment)
+            .commit()
+        mBinding.toolbar.title = title
+        supportActionBar?.title = title
     }
 }

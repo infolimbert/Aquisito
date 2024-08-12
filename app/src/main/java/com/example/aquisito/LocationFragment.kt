@@ -1,6 +1,7 @@
 package com.example.aquisito
 
 import android.Manifest
+import android.content.IntentSender
 import android.content.pm.PackageManager
 import android.location.Geocoder
 import android.location.Location
@@ -15,16 +16,24 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.text.intl.Locale
 import androidx.core.content.ContextCompat
 import com.example.aquisito.databinding.FragmentLocationBinding
+import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.LocationSettingsRequest
 import com.google.android.gms.location.Priority
 import java.io.IOException
 
 class LocationFragment : Fragment() {
 
+    //usamos como variable global ya que necesitamos esta solicitud en varias funciones
+    private val locationRequest: LocationRequest by lazy {
+        LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000)
+            .setMinUpdateIntervalMillis(5000)
+            .build()
+    }
     // Variable privada para el binding, inicializada como nula
     private var locationBinding: FragmentLocationBinding? =null
     // Propiedad pública para acceder al binding, asegura que no sea nula
@@ -35,7 +44,8 @@ class LocationFragment : Fragment() {
 
     // Registrador del lanzador de permisos
         private val requestPermissionLauncher = registerForActivityResult(
-                ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
+                ActivityResultContracts.RequestPermission()
+        ) { isGranted: Boolean ->
             if (isGranted){
                 //si el permiso es concedido, procede a obtener la ubicacion
                 getLastKnowLocation()
@@ -59,17 +69,30 @@ class LocationFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
-        checkLocationPermission()
+
+        //inicializa locationCallback aqui
+        locationCallback = object : LocationCallback (){
+            override fun onLocationResult(locationResult: LocationResult) {
+                for (location in locationResult.locations){
+                    updateLocationUI(location)
+                }
+            }
+        }
+        checkLocationPermission() // Verifica permisos solo una vez
     }
+
 
     // Verifica si el permiso de ubicación está concedido
     private fun checkLocationPermission() {
                 if (ContextCompat.checkSelfPermission(
                     requireContext(),
                     android.Manifest.permission.ACCESS_FINE_LOCATION
-                )== PackageManager.PERMISSION_GRANTED){
-                    getLastKnowLocation()
+                )== PackageManager.PERMISSION_GRANTED
+               ){
+                    checkAndEnableGPS()
+                    //getLastKnowLocation()
                 }else{
                     // Permiso ya concedido, puedes iniciar las actualizaciones de ubicación
                     //Toast.makeText(requireContext(),"Permiso de ubicacion concedido",Toast.LENGTH_SHORT).show()
@@ -77,6 +100,31 @@ class LocationFragment : Fragment() {
                 }
     }
 
+    private fun checkAndEnableGPS(){
+        //construye una solicitud de configuracion de ubicacion que invluye la solicitud anterior
+        val builder = LocationSettingsRequest.Builder()
+            .addLocationRequest(locationRequest)
+
+        //Obtiene el cliente de configuracion de ubicacion para verificar si el gps esta habilitado
+        val settingsClient = LocationServices.getSettingsClient(requireActivity())
+        val task = settingsClient.checkLocationSettings(builder.build())
+
+        //si el Gps esta habilitado, procede a obtener la ultima ubicacion conocida
+        task.addOnSuccessListener {
+            getLastKnowLocation()
+        }.addOnFailureListener { exception ->
+
+            //si el gps no esta hablitado, intenta resolver el problewma mostrando  un dialogo
+            if(exception is ResolvableApiException){
+                try {
+                    // abre el dialogo para que el usuario habilite gps
+                    exception.startResolutionForResult(requireActivity(),100)
+                }catch (sendEx: IntentSender.SendIntentException){
+                    // SI ocurre un error al intentar abrir el dialogo, lo ignoramos
+                }
+            }
+        }
+    }
 
 
     // Implementación para obtener la última ubicación conocida
@@ -99,9 +147,6 @@ class LocationFragment : Fragment() {
     }
 
     private fun requestLocationUpdates() {
-        val locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY,1000)
-            .setMinUpdateIntervalMillis(5000)
-            .build()
 
         locationCallback = object: LocationCallback(){
             override fun onLocationResult(locationResult: LocationResult) {
@@ -112,7 +157,9 @@ class LocationFragment : Fragment() {
         }
 
         try{
-            fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
+            fusedLocationClient.requestLocationUpdates(
+                locationRequest, locationCallback, Looper.getMainLooper()
+            )
         }catch(e: SecurityException ){
             binding.tvLocation.text="No se puede obtener la ubicacion. Permiso denegado."
         }
@@ -123,9 +170,10 @@ class LocationFragment : Fragment() {
     private fun updateLocationUI(location: Location){
         /*val locationText= "Lat: ${location.latitude}, Lng: ${location.longitude}"
         binding.tvLocation.text = locationText*/
+
+        //actualiza la vista con la nueva direccion y guarda la ultima ubicacion conocida
         convertLocationAddress(location)
     }
-
 
 
     // Método para convertir la ubicación en una dirección legible
@@ -160,8 +208,26 @@ class LocationFragment : Fragment() {
 
     }
 
+    override fun onPause() {
+        super.onPause()
+        //Solo intentar eliminar las actualizaciones de ubicaion si locationCallback ha sido inicializado
+        if (::locationCallback.isInitialized){
+            fusedLocationClient.removeLocationUpdates(locationCallback)
+        }
 
 
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Verificar si los permisos están concedidos y el GPS está habilitado
+        if (ContextCompat.checkSelfPermission(
+            requireContext(),android.Manifest.permission.ACCESS_FINE_LOCATION
+        )== PackageManager.PERMISSION_GRANTED){
+
+            checkAndEnableGPS()// asegurate q el gps este hablitado y actualizado
+        }
+    }
 
 
     // Limpia el binding para evitar fugas de memoria
@@ -171,4 +237,6 @@ class LocationFragment : Fragment() {
         //Detener las actualizaciones de ubicacion cuando se destruya la vista
         fusedLocationClient.removeLocationUpdates(locationCallback)
     }
+
+    //maneja el resultado de la oslicitud para hablitar el GPS
 }
