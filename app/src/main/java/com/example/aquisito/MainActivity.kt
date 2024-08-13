@@ -1,30 +1,18 @@
 package com.example.aquisito
 
-import LocationFragment
 import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import com.example.aquisito.databinding.ActivityMainBinding
-import com.example.aquisito.ui.theme.AquisitoTheme
-import com.google.android.material.bottomnavigation.BottomNavigationView
-import com.google.android.material.bottomnavigation.LabelVisibilityMode
-import com.google.android.material.navigation.NavigationBarView
 
 class MainActivity : AppCompatActivity() {
 
+
+    // Variable para el binding de la actividad principal
     private lateinit var mBinding: ActivityMainBinding
 
-    private lateinit var mActiveFragment: Fragment
+    // Variables para manejar el fragmento activo y el administrador de fragmentos
     private lateinit var mFragmentManager: FragmentManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,17 +22,17 @@ class MainActivity : AppCompatActivity() {
         setContentView(mBinding.root)
 
 
-        // Configuración de la barra de herramientas
+        // Configuración de la barra de herramientas (Toolbar)
         setSupportActionBar(mBinding.toolbar)
 
         // Configurar la vista de navegación inferior
         val bottomNavigationView = mBinding.bottomNav
 
-        // Configurar el listener de navegación y los fragmentos
+        // Configurar la vista de navegación inferior (BottomNavigationView)
         setupBottomNav()
 
-        // Establecer el elemento seleccionado inicial y el título
-        bottomNavigationView.selectedItemId = R.id.action_location
+        // Seleccionar y mostrar por defecto el fragmento de ubicación (LocationFragment)
+        mBinding.bottomNav.selectedItemId = R.id.action_location
         mBinding.toolbar.title = getString(R.string.location_title)
         supportActionBar?.title = mBinding.toolbar.title
 
@@ -52,61 +40,41 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupBottomNav(){
-       mFragmentManager = supportFragmentManager
+
+        mFragmentManager = supportFragmentManager
 
         val locationFragment = LocationFragment()
         val routeFragment = RouteFragment()
         val configFragment = ConfigFragment()
 
-        mActiveFragment = LocationFragment()
-
-        // Añadir todos los fragmentos, ocultando los que no están activos
-        mFragmentManager.beginTransaction()
-            .add(R.id.hostFragment, configFragment, ConfigFragment::class.java.name)
-            .detach(configFragment).commit()
-
-        mFragmentManager.beginTransaction()
-            .add(R.id.hostFragment, routeFragment, RouteFragment::class.java.name)
-            .detach(routeFragment).commit()
-
-        mFragmentManager.beginTransaction()
-            .add(R.id.hostFragment, locationFragment, LocationFragment::class.java.name)
-            .commit()
-
-
-
-            mBinding.bottomNav.setOnItemSelectedListener {
-                when(it.itemId){
-                    R.id.action_location -> {
-                        mFragmentManager.beginTransaction().detach(mActiveFragment).attach(locationFragment).commit()
-                        mActiveFragment = locationFragment
-                        // Sincronizar el título de ActionBar con el título de Toolbar
-                        mBinding.toolbar.title = getString(R.string.location_title)
-                        supportActionBar?.title = mBinding.toolbar.title
-                        true
-                    }
-
-                    R.id.action_route -> {
-                        mFragmentManager.beginTransaction().detach(mActiveFragment).attach(routeFragment).commit()
-                        mActiveFragment = routeFragment
-                        // Sincronizar el título de ActionBar con el título de Toolbar
-                        mBinding.toolbar.title = getString(R.string.route_title)
-                        supportActionBar?.title = mBinding.toolbar.title
-                        true
-                    }
-
-                    R.id.action_config -> {
-                        mFragmentManager.beginTransaction().detach(mActiveFragment).attach(configFragment).commit()
-                        mActiveFragment = configFragment
-                        // Sincronizar el título de ActionBar con el título de Toolbar
-                        mBinding.toolbar.title = getString(R.string.config_title)
-                        supportActionBar?.title = mBinding.toolbar.title
-                        true
-                    }
-                    else -> false
-
+        // Configuración del listener para gestionar los clics en los elementos del BottomNavigationView
+        mBinding.bottomNav.setOnItemSelectedListener {
+            when(it.itemId){
+                R.id.action_location->{
+                    // Reemplaza el fragmento actual por el LocationFragment y actualiza el título
+                    replaceFragment(locationFragment, getString(R.string.location_title))
+                    true
                 }
+                R.id.action_route ->{
+                    replaceFragment(routeFragment,getString(R.string.route_title))
+                    true
+                }
+                R.id.action_config->{
+                    replaceFragment(configFragment,getString(R.string.config_title))
+                    true
+                }
+                else-> false
             }
 
+        }
+    }
+
+    // Método para reemplazar el fragmento actual y actualizar el título de la barra de herramientas
+    private fun replaceFragment(fragment: Fragment, title: String) {
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.hostFragment, fragment) // Reemplaza el fragmento en el contenedor hostFragment
+            .commit()
+        mBinding.toolbar.title = title  // Actualiza el título del Toolbar
+        supportActionBar?.title = title // Sincroniza el título de la ActionBar con el del Toolbar
     }
 }
