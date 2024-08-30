@@ -48,20 +48,7 @@ class MainActivity : AppCompatActivity() {
         val routeFragment = RouteFragment()
         val configFragment = ConfigFragment()
 
-        //mActiveFragment = LocationFragment() //inicializa con el fragmento inicial
 
-    /*    // Añadir todos los fragmentos, ocultando los que no están activos
-        mFragmentManager.beginTransaction()
-            .add(R.id.hostFragment, configFragment, ConfigFragment::class.java.name)
-            .hide(configFragment).commit()
-
-        mFragmentManager.beginTransaction()
-            .add(R.id.hostFragment, routeFragment, RouteFragment::class.java.name)
-            .hide(routeFragment).commit()
-
-        mFragmentManager.beginTransaction()
-            .add(R.id.hostFragment, locationFragment, LocationFragment::class.java.name)
-            .commit()*/
 
         mBinding.bottomNav.setOnItemSelectedListener {
             when(it.itemId){
@@ -81,38 +68,6 @@ class MainActivity : AppCompatActivity() {
             }
 
         }
-
-
-            /*mBinding.bottomNav.setOnItemSelectedListener {
-                when(it.itemId){
-                    R.id.action_location -> {
-                        mFragmentManager.beginTransaction().hide(mActiveFragment).show(locationFragment).commit()
-                        mActiveFragment = locationFragment
-
-                        // Sincronizar el título de ActionBar con el título de Toolbar
-                        mBinding.toolbar.title = getString(R.string.location_title)
-                        true
-                    }
-
-                    R.id.action_route -> {
-                        mFragmentManager.beginTransaction().hide(mActiveFragment).show(routeFragment).commit()
-                        mActiveFragment = routeFragment
-                        // Sincronizar el título de ActionBar con el título de Toolbar
-                        mBinding.toolbar.title = getString(R.string.route_title)
-                        true
-                    }
-
-                    R.id.action_config -> {
-                        mFragmentManager.beginTransaction().hide(mActiveFragment).show(configFragment).commit()
-                        mActiveFragment = configFragment
-                        // Sincronizar el título de ActionBar con el título de Toolbar
-                        mBinding.toolbar.title = getString(R.string.config_title)
-                        true
-                    }
-                    else -> false
-
-                }
-            }*/
 
     }
 

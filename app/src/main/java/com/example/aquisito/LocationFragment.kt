@@ -1,12 +1,14 @@
 package com.example.aquisito
 
 import android.Manifest
+import android.content.Intent
 import android.content.IntentSender
 import android.content.pm.PackageManager
 import android.location.Geocoder
 import android.location.Location
 import android.os.Bundle
 import android.os.Looper
+import android.provider.Settings
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -113,15 +115,11 @@ class LocationFragment : Fragment() {
         task.addOnSuccessListener {
             getLastKnowLocation()
         }.addOnFailureListener { exception ->
-
             //si el gps no esta hablitado, intenta resolver el problewma mostrando  un dialogo
-            if(exception is ResolvableApiException){
-                try {
-                    // abre el dialogo para que el usuario habilite gps
-                    exception.startResolutionForResult(requireActivity(),100)
-                }catch (sendEx: IntentSender.SendIntentException){
-                    // SI ocurre un error al intentar abrir el dialogo, lo ignoramos
-                }
+            if (exception is ResolvableApiException) {
+                // Redirige a la configuración del GPS si no está habilitado
+                val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                startActivity(intent)
             }
         }
     }
@@ -224,7 +222,6 @@ class LocationFragment : Fragment() {
         if (ContextCompat.checkSelfPermission(
             requireContext(),android.Manifest.permission.ACCESS_FINE_LOCATION
         )== PackageManager.PERMISSION_GRANTED){
-
             checkAndEnableGPS()// asegurate q el gps este hablitado y actualizado
         }
     }
