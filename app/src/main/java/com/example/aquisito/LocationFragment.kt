@@ -1,14 +1,19 @@
 package com.example.aquisito
 
 import android.Manifest
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.IntentSender
 import android.content.pm.PackageManager
 import android.location.Geocoder
 import android.location.Location
+import android.location.LocationManager
 import android.os.Bundle
 import android.os.Looper
 import android.provider.Settings
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -17,6 +22,7 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.text.intl.Locale
 import androidx.core.content.ContextCompat
+import androidx.core.location.LocationManagerCompat.isLocationEnabled
 import com.example.aquisito.databinding.FragmentLocationBinding
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -32,8 +38,8 @@ class LocationFragment : Fragment() {
 
     //usamos como variable global ya que necesitamos esta solicitud en varias funciones
     private val locationRequest: LocationRequest by lazy {
-        LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000)
-            .setMinUpdateIntervalMillis(5000)
+        LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 2000)
+            .setMinUpdateIntervalMillis(2000)
             .build()
     }
     // Variable privada para el binding, inicializada como nula
@@ -44,20 +50,21 @@ class LocationFragment : Fragment() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var locationCallback: LocationCallback
 
+    private lateinit var gpsStatusReceiver: BroadcastReceiver
+
     // Registrador del lanzador de permisos
         private val requestPermissionLauncher = registerForActivityResult(
                 ActivityResultContracts.RequestPermission()
         ) { isGranted: Boolean ->
             if (isGranted){
                 //si el permiso es concedido, procede a obtener la ubicacion
-                getLastKnowLocation()
+                checkAndEnableGPS()
             }else  {
                 // si el permiso es denegado, muestra un mensaje
                 binding.tvLocation.text = "Permiso denegado. No se pueede obtener la ubicacion"
             }
 
     }
-
 
     // Se infla el layout del fragmento y se inicializa el binding
     override fun onCreateView(
@@ -71,20 +78,26 @@ class LocationFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
-
         //inicializa locationCallback aqui
         locationCallback = object : LocationCallback (){
             override fun onLocationResult(locationResult: LocationResult) {
                 for (location in locationResult.locations){
                     updateLocationUI(location)
+                    Log.d("LocationFragment", "Ubicación actualizada: Lat: ${location.latitude}, Lng: ${location.longitude}")
                 }
             }
         }
+
+        registerGPSStatusReceiver()
         checkLocationPermission() // Verifica permisos solo una vez
     }
 
+    fun resumeLocationUpdates() {
+        if (isLocationEnabled()) {
+            requestLocationUpdates()
+        }
+    }
 
     // Verifica si el permiso de ubicación está concedido
     private fun checkLocationPermission() {
@@ -93,6 +106,7 @@ class LocationFragment : Fragment() {
                     android.Manifest.permission.ACCESS_FINE_LOCATION
                 )== PackageManager.PERMISSION_GRANTED
                ){
+                    Log.d("LocationFragment","GPS habilitado desde el onCreated")
                     checkAndEnableGPS()
                     //getLastKnowLocation()
                 }else{
@@ -114,6 +128,7 @@ class LocationFragment : Fragment() {
         //si el Gps esta habilitado, procede a obtener la ultima ubicacion conocida
         task.addOnSuccessListener {
             getLastKnowLocation()
+            Log.d("LocationFragment","GPS listo par usar entro al CHECKANDENABLEDGPS")
         }.addOnFailureListener { exception ->
             //si el gps no esta hablitado, intenta resolver el problewma mostrando  un dialogo
             if (exception is ResolvableApiException) {
@@ -146,14 +161,14 @@ class LocationFragment : Fragment() {
 
     private fun requestLocationUpdates() {
 
-        locationCallback = object: LocationCallback(){
+     /*   locationCallback = object: LocationCallback(){
             override fun onLocationResult(locationResult: LocationResult) {
                 for (location in locationResult.locations){
                     updateLocationUI(location)
                 }
             }
         }
-
+*/
         try{
             fusedLocationClient.requestLocationUpdates(
                 locationRequest, locationCallback, Looper.getMainLooper()
@@ -206,6 +221,43 @@ class LocationFragment : Fragment() {
 
     }
 
+    private fun registerGPSStatusReceiver() {
+        gpsStatusReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                if (LocationManager.PROVIDERS_CHANGED_ACTION == intent?.action) {
+                    if (isLocationEnabled()) {
+                        getLastKnowLocation()
+                    } else {
+                        binding.tvLocation.text = "GPS deshabilitado"
+                    }
+                }
+            }
+        }
+        val filter = IntentFilter(LocationManager.PROVIDERS_CHANGED_ACTION)
+        requireContext().registerReceiver(gpsStatusReceiver, filter)
+    }
+
+    private fun isLocationEnabled(): Boolean {
+        val locationManager = requireContext().getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
+                locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+    }
+
+
+
+    override fun onResume() {
+        super.onResume()
+        if (ContextCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            getLastKnowLocation()  // Obtener la última ubicación conocida al volver a entrar al fragmento
+            requestLocationUpdates()  // Solicitar actualizaciones continuas de la ubicación
+        }
+
+    }
+
     override fun onPause() {
         super.onPause()
         //Solo intentar eliminar las actualizaciones de ubicaion si locationCallback ha sido inicializado
@@ -215,17 +267,6 @@ class LocationFragment : Fragment() {
 
 
     }
-
-    override fun onResume() {
-        super.onResume()
-        // Verificar si los permisos están concedidos y el GPS está habilitado
-        if (ContextCompat.checkSelfPermission(
-            requireContext(),android.Manifest.permission.ACCESS_FINE_LOCATION
-        )== PackageManager.PERMISSION_GRANTED){
-            checkAndEnableGPS()// asegurate q el gps este hablitado y actualizado
-        }
-    }
-
 
     // Limpia el binding para evitar fugas de memoria
     override fun onDestroyView() {

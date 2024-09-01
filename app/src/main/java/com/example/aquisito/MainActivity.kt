@@ -11,8 +11,9 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var mBinding: ActivityMainBinding
 
-    private lateinit var mActiveFragment: Fragment
-    private lateinit var mFragmentManager: FragmentManager
+    private val locationFragment = LocationFragment()
+    private val routeFragment = RouteFragment()
+    private val configFragment = ConfigFragment()
 
     override fun onCreate(savedInstanceState: Bundle?) {
 
@@ -20,54 +21,46 @@ class MainActivity : AppCompatActivity() {
         mBinding= ActivityMainBinding.inflate(layoutInflater)
         setContentView(mBinding.root)
 
-        // Configuración de la barra de herramientas
-        setSupportActionBar(mBinding.toolbar)
-
-        // Configurar la vista de navegación inferior
-       // val bottomNavigationView = mBinding.bottomNav
-
-        // Configurar el listener de navegación y los fragmentos
-        setupBottomNav()
-
-        // Establecer el elemento seleccionado inicial y el título
-        /*bottomNavigationView.selectedItemId = R.id.action_location
-        mBinding.toolbar.title = getString(R.string.location_title)
-        supportActionBar?.title = mBinding.toolbar.title*/
-
-        mBinding.bottomNav.selectedItemId = R.id.action_location
-        mBinding.toolbar.title = getString(R.string.location_title)
-        supportActionBar?.title = mBinding.toolbar.title
+        //gestor para la barra de navegacion
+        bottomNav()
 
 
     }
 
-    private fun setupBottomNav(){
-       mFragmentManager = supportFragmentManager
 
-        val locationFragment = LocationFragment()
-        val routeFragment = RouteFragment()
-        val configFragment = ConfigFragment()
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) {
+            val currentFragment = supportFragmentManager.findFragmentById(R.id.hostFragment)
+            if (currentFragment is LocationFragment) {
+                currentFragment.resumeLocationUpdates()
+            }
+        }
+    }
 
+    private fun bottomNav(){
+        setSupportActionBar(mBinding.toolbar)
 
-
-        mBinding.bottomNav.setOnItemSelectedListener {
-            when(it.itemId){
-                R.id.action_location->{
+        mBinding.bottomNav.setOnItemSelectedListener { menuItem ->
+            when (menuItem.itemId) {
+                R.id.action_location -> {
                     replaceFragment(locationFragment, getString(R.string.location_title))
                     true
                 }
-                R.id.action_route ->{
-                    replaceFragment(routeFragment,getString(R.string.route_title))
+                R.id.action_route -> {
+                    replaceFragment(routeFragment, getString(R.string.route_title))
                     true
                 }
-                R.id.action_config->{
-                    replaceFragment(configFragment,getString(R.string.config_title))
+                R.id.action_config -> {
+                    replaceFragment(configFragment, getString(R.string.config_title))
                     true
                 }
-                else-> false
+                else -> false
             }
-
         }
+
+        // Establecer la pestaña inicial
+        mBinding.bottomNav.selectedItemId = R.id.action_location
 
     }
 
@@ -75,7 +68,9 @@ class MainActivity : AppCompatActivity() {
         supportFragmentManager.beginTransaction()
             .replace(R.id.hostFragment, fragment)
             .commit()
+
         mBinding.toolbar.title = title
         supportActionBar?.title = title
     }
+
 }
