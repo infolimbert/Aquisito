@@ -1,10 +1,21 @@
 package com.example.aquisito
 
+import android.content.IntentSender
+import android.content.pm.PackageManager
 import android.os.Bundle
+import android.util.Log
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import com.example.aquisito.databinding.ActivityMainBinding
+import com.google.android.gms.common.api.ResolvableApiException
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.LocationSettingsRequest
+import com.google.android.gms.location.Priority
 
 
 class MainActivity : AppCompatActivity() {
@@ -15,6 +26,17 @@ class MainActivity : AppCompatActivity() {
     private val routeFragment = RouteFragment()
     private val configFragment = ConfigFragment()
 
+
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            checkAndEnableGPS()
+        } else {
+            Toast.makeText(this, "Permiso de ubicación denegado.", Toast.LENGTH_LONG).show()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
 
         super.onCreate(savedInstanceState)
@@ -23,19 +45,58 @@ class MainActivity : AppCompatActivity() {
 
         //gestor para la barra de navegacion
         bottomNav()
+        checkLocationPermission()
 
 
     }
-
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus) {
             val currentFragment = supportFragmentManager.findFragmentById(R.id.hostFragment)
-            if (currentFragment is LocationFragment) {
-                currentFragment.resumeLocationUpdates()
+            when (currentFragment) {
+                is LocationFragment -> currentFragment.enableLocationFeatures(true)
+                //is RouteFragment -> currentFragment.updateRouteDisplay()
+                // Agrega más casos si es necesario para otros fragmentosel
             }
         }
+    }
+
+    private fun checkLocationPermission() {
+        when {
+            ContextCompat.checkSelfPermission(
+                this,
+                android.Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED -> {
+                checkAndEnableGPS()
+            }
+            else -> {
+                requestPermissionLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+            }
+        }
+    }
+
+    private fun checkAndEnableGPS() {
+        val locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 5000)
+            .setMinUpdateIntervalMillis(2000)
+            .build()
+        val builder = LocationSettingsRequest.Builder().addLocationRequest(locationRequest)
+        val client = LocationServices.getSettingsClient(this)
+
+        client.checkLocationSettings(builder.build())
+            .addOnSuccessListener {
+                locationFragment.enableLocationFeatures(true)
+            }
+            .addOnFailureListener { exception ->
+                Log.d("LocationFragment","El GPS esta listo par ausarse desde el CheckAndEnabledGPS")
+                if (exception is ResolvableApiException) {
+                    try {
+                        exception.startResolutionForResult(this, 1001)
+                    } catch (sendEx: IntentSender.SendIntentException) {
+                        Log.d("MainActivity", "Error al intentar habilitar el GPS: ${sendEx.message}")
+                    }
+                }
+            }
     }
 
     private fun bottomNav(){
