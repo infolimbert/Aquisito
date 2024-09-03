@@ -41,6 +41,9 @@ class LocationFragment : Fragment() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var locationCallback: LocationCallback
 
+    // uso del broadcast
+    private lateinit var gpsStatusReceiver: BroadcastReceiver
+
 
     // Inicialización del request para ubicación con alta precisión
     private val locationRequest: LocationRequest by lazy {
@@ -59,14 +62,45 @@ class LocationFragment : Fragment() {
         return locationBinding.root
 
 
+
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
         initializeLocationCallback()
+        registerGPSStatusReceiver()
+
 
     }
+    private fun registerGPSStatusReceiver() {
+            gpsStatusReceiver = object : BroadcastReceiver() {
+                override fun onReceive(context: Context?, intent: Intent?) {
+                    if (intent?.action == LocationManager.PROVIDERS_CHANGED_ACTION) {
+                        updateGPSStatus()
+                    }
+                }
+            }
+            val filter = IntentFilter(LocationManager.PROVIDERS_CHANGED_ACTION)
+            requireContext().registerReceiver(gpsStatusReceiver, filter)
+    }
+
+
+    //recibe la respuesta y cambie el tvlocation
+    private fun updateGPSStatus() {
+        if (!isGPSEnabled(requireContext())) {
+            locationBinding.tvLocation.text = "GPS deshabilitado. Actívelo para usar esta función."
+        } else {
+            locationBinding.tvLocation.text = "GPS habilitado. Obteniendo ubicación..."
+            // Puedes también reiniciar aquí las actualizaciones de ubicación si es necesario
+        }
+    }
+    // funcion que envia una respuesta bollean de false o true para ver si el gps esta hablitado
+    fun isGPSEnabled(context: Context): Boolean {
+        val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+    }
+
 
     fun enableLocationFeatures(enable: Boolean) {
         if (enable) {
@@ -103,11 +137,18 @@ class LocationFragment : Fragment() {
                 //obtenemos la primera direccion de la lista
                 val address = address[0]
 
+                val addressText = if (address.thoroughfare != null) {
+                    "${address.thoroughfare}, ${address.locality}, ${address.countryName}"
+                } else {
+                    "Sin nombre designado, ${address.locality}, ${address.countryName}"
+                }
+                locationBinding.tvLocation.text = addressText
+
                 //construimos una cadena de texto con los componentes de la direccion
-                val addressText= "${address.thoroughfare}, ${address.locality}, ${address.countryName}"
+                //val addressText= "${address.thoroughfare}, ${address.locality}, ${address.countryName}"
 
                 //mostramos la direecon en un textView (tvlocation) en la interfaz de usuario
-                locationBinding.tvLocation.text = addressText
+                //locationBinding.tvLocation.text = addressText
             }else{
                 // si no se encuentra ninguna direecon, mostramos latitud longitud
                 //"Lat: ${location.latitude}, Lng: ${location.longitude}"
@@ -150,7 +191,7 @@ class LocationFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         // Reanudar las actualizaciones de ubicación al volver al fragmento
-        super.onResume()
+        gpsStatusReceiver
         if (ContextCompat.checkSelfPermission(
                 requireContext(),
                 Manifest.permission.ACCESS_FINE_LOCATION
@@ -164,10 +205,18 @@ class LocationFragment : Fragment() {
         super.onPause()
         // Detener las actualizaciones de ubicación para evitar consumo innecesario de batería
         stopLocationUpdates()
-
-
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        // Asegúrate de desregistrar el BroadcastReceiver para evitar fugas de memoria
+        unregisterReceiverIfNeeded()
+    }
+
+    private fun unregisterReceiverIfNeeded() {
+            requireContext().unregisterReceiver(gpsStatusReceiver)
+
+    }
 
 
 }

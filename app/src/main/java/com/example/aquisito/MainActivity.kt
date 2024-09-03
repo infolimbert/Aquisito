@@ -132,7 +132,7 @@ class MainActivity : AppCompatActivity() {
         if (!isGPSEnabled(this
         )) {
             // Mostrar un diálogo o una notificación pidiendo al usuario que habilite el GPS
-            showAlertGpsDisabled()
+            //showAlertGpsDisabled()
         }
     }
 
@@ -142,14 +142,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showInContextUI() {
-        AlertDialog.Builder(this)
-            .setTitle("Permiso de ubicación necesario")
-            .setMessage("Esta aplicación necesita acceso a la ubicación para funcionar correctamente. Por favor, permite el acceso para continuar.")
-            .setPositiveButton("OK") { _, _ ->
-                requestPermissionLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
-            }
-            .setNegativeButton("Cancelar", null)
-            .show()
+        if (!isGPSEnabled(this)){
+            AlertDialog.Builder(this)
+                .setTitle("Permiso de ubicación necesario")
+                .setMessage("Esta aplicación necesita acceso a la ubicación para funcionar correctamente. Por favor, permite el acceso para continuar.")
+                .setPositiveButton("OK") { _, _ ->
+                    requestPermissionLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
+
+        }
+
     }
     private fun bottomNav(){
 
