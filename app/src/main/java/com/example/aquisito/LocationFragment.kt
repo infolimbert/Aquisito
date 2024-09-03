@@ -61,7 +61,6 @@ class LocationFragment : Fragment() {
 
     }
 
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
@@ -95,7 +94,6 @@ class LocationFragment : Fragment() {
     private fun convertLocationAddress(location: Location){
         //geocoder nos permite convertir coordenas en una direccion
         val geocoder = Geocoder(requireContext(), java.util.Locale.getDefault())
-
         //intentamos obtener la direccion utilizando el geocoder
         try {
             val address = geocoder.getFromLocation(location.latitude, location.longitude, 1)
@@ -138,7 +136,9 @@ class LocationFragment : Fragment() {
 
 
     private fun stopLocationUpdates() {
-        fusedLocationClient.removeLocationUpdates(locationCallback)
+        if (::locationCallback.isInitialized) {
+            fusedLocationClient.removeLocationUpdates(locationCallback)
+        }
     }
 
     private fun updateLocationUI(location: Location) {
@@ -157,18 +157,17 @@ class LocationFragment : Fragment() {
             ) == PackageManager.PERMISSION_GRANTED
         ) {
             requestLocationUpdates()  // Solicitar actualizaciones continuas de la ubicación
-        } else {
-            // Opcional: Podrías mostrar una explicación o solicitar los permisos nuevamente aquí
         }
     }
 
     override fun onPause() {
         super.onPause()
         // Detener las actualizaciones de ubicación para evitar consumo innecesario de batería
-        if (::fusedLocationClient.isInitialized && ::locationCallback.isInitialized) {
-            fusedLocationClient.removeLocationUpdates(locationCallback)
-        }
+        stopLocationUpdates()
+
+
     }
+
 
 
 }
