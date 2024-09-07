@@ -36,21 +36,14 @@ import java.io.IOException
 
 class LocationFragment : Fragment() {
 
+    private lateinit var locationUpdateReceiver: BroadcastReceiver
+
     // Variable privada para el binding, inicializada como nula
     private lateinit var locationBinding: FragmentLocationBinding
-    private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private lateinit var locationCallback: LocationCallback
 
     // uso del broadcast
     private lateinit var gpsStatusReceiver: BroadcastReceiver
 
-
-    // Inicialización del request para ubicación con alta precisión
-    private val locationRequest: LocationRequest by lazy {
-        LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 2000)
-            .setMinUpdateIntervalMillis(2000)
-            .build()
-    }
 
     // Se infla el layout del fragmento y se inicializa el binding
     override fun onCreateView(
@@ -61,18 +54,38 @@ class LocationFragment : Fragment() {
         locationBinding = FragmentLocationBinding.inflate(inflater, container, false)
         return locationBinding.root
 
-
-
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
-        initializeLocationCallback()
+
+        // Iniciar el servicio de ubicación
+        val serviceIntent = Intent(requireContext(), LocationService::class.java)
+        requireContext().startService(serviceIntent)
+
         registerGPSStatusReceiver()
+        // Registrar el BroadcastReceiver para escuchar las actualizaciones de ubicación
+        registerLocationReceiver()
 
 
     }
+
+    private fun registerLocationReceiver(){
+        locationUpdateReceiver = object : BroadcastReceiver(){
+
+            override  fun onReceive(context: Context?, intent: Intent){
+                val lat = intent?.getDoubleExtra("latitud", 0.0)
+                val lgt = intent?.getDoubleExtra("longitud", 0.0)
+                val address = intent?.getStringExtra("address")
+
+                locationBinding.tvLocation.text = address
+            }
+        }
+        val intentFilter = IntentFilter("LocationUpdate")
+        requireContext().registerReceiver(locationUpdateReceiver, intentFilter)
+    }
+
+
     private fun registerGPSStatusReceiver() {
             gpsStatusReceiver = object : BroadcastReceiver() {
                 override fun onReceive(context: Context?, intent: Intent?) {
@@ -86,13 +99,14 @@ class LocationFragment : Fragment() {
     }
 
 
+
     //recibe la respuesta y cambie el tvlocation
     private fun updateGPSStatus() {
         if (!isGPSEnabled(requireContext())) {
             locationBinding.tvLocation.text = "GPS deshabilitado. Actívelo para usar esta función."
         } else {
             locationBinding.tvLocation.text = "GPS habilitado. Obteniendo ubicación..."
-            // Puedes también reiniciar aquí las actualizaciones de ubicación si es necesario
+            Log.d("LocationFragment", "GPS habilitado. Esperando actualizaciones de ubicación...")
         }
     }
     // funcion que envia una respuesta bollean de false o true para ver si el gps esta hablitado
@@ -103,118 +117,18 @@ class LocationFragment : Fragment() {
 
 
     fun enableLocationFeatures(enable: Boolean) {
-        if (enable) {
-            requestLocationUpdates()
-        } else {
-            stopLocationUpdates()
-        }
-    }
-
-
-    private fun initializeLocationCallback() {
-        locationCallback = object : LocationCallback() {
-            override fun onLocationResult(locationResult: LocationResult) {
-                for (location in locationResult.locations) {
-                    //updateLocationUI(location)
-                    convertLocationAddress(location)
-                    Log.d("LocationFragment","Lat: ${location.latitude}, Lng: ${location.longitude}")
-                }
-            }
-        }
-    }
-
-    // Método para convertir la ubicación en una dirección legible
-
-    private fun convertLocationAddress(location: Location){
-        //geocoder nos permite convertir coordenas en una direccion
-        val geocoder = Geocoder(requireContext(), java.util.Locale.getDefault())
-        //intentamos obtener la direccion utilizando el geocoder
-        try {
-            val address = geocoder.getFromLocation(location.latitude, location.longitude, 1)
-
-            //si la lista de direccon no esta vacia
-            if(!address.isNullOrEmpty()){
-                //obtenemos la primera direccion de la lista
-                val address = address[0]
-
-                val addressText = if (address.thoroughfare != null) {
-                    "${address.thoroughfare}, ${address.locality}, ${address.countryName}"
-                } else {
-                    "Sin nombre designado, ${address.locality}, ${address.countryName}"
-                }
-                locationBinding.tvLocation.text = addressText
-
-                //construimos una cadena de texto con los componentes de la direccion
-                //val addressText= "${address.thoroughfare}, ${address.locality}, ${address.countryName}"
-
-                //mostramos la direecon en un textView (tvlocation) en la interfaz de usuario
-                //locationBinding.tvLocation.text = addressText
-            }else{
-                // si no se encuentra ninguna direecon, mostramos latitud longitud
-                //"Lat: ${location.latitude}, Lng: ${location.longitude}"
-                locationBinding.tvLocation.text = "No hay direccion "
-            }
-
-        }catch (e: IOException){
-            // En caso de error, mostramos un mensaje
-            locationBinding.tvLocation.text = "Error al obtener la direccion"
-        }
+        if (enable)
+            registerLocationReceiver()
 
     }
 
-    private fun requestLocationUpdates() {
-        try {
-            fusedLocationClient.requestLocationUpdates(
-                locationRequest,
-                locationCallback,
-                Looper.getMainLooper()
-            )
-        } catch (e: SecurityException) {
-            // Properly handle exception
-            locationBinding.tvLocation.text = "No se puede obtener la ubicación. Permiso denegado."
-        }
-    }
-
-
-    private fun stopLocationUpdates() {
-        if (::locationCallback.isInitialized) {
-            fusedLocationClient.removeLocationUpdates(locationCallback)
-        }
-    }
-
-    private fun updateLocationUI(location: Location) {
-        val locationText = "Lat: ${location.latitude}, Lng: ${location.longitude}"
-        locationBinding.tvLocation.text = locationText
-    }
-
-
-    override fun onResume() {
-        super.onResume()
-        // Reanudar las actualizaciones de ubicación al volver al fragmento
-        gpsStatusReceiver
-        if (ContextCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
-        ) {
-            requestLocationUpdates()  // Solicitar actualizaciones continuas de la ubicación
-        }
-    }
-
-    override fun onPause() {
-        super.onPause()
-        // Detener las actualizaciones de ubicación para evitar consumo innecesario de batería
-        stopLocationUpdates()
-    }
 
     override fun onDestroy() {
         super.onDestroy()
         // Asegúrate de desregistrar el BroadcastReceiver para evitar fugas de memoria
-        unregisterReceiverIfNeeded()
-    }
-
-    private fun unregisterReceiverIfNeeded() {
-            requireContext().unregisterReceiver(gpsStatusReceiver)
+        requireContext().unregisterReceiver(gpsStatusReceiver)
+        // Desregistrar el BroadcastReceiver cuando el fragmento se destruye
+        requireContext().unregisterReceiver(locationUpdateReceiver)
 
     }
 
