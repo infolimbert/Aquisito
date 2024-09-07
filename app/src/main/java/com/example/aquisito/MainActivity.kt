@@ -39,7 +39,8 @@ class MainActivity : AppCompatActivity() {
     private val configFragment = ConfigFragment()
 
 
-
+    // Código de solicitud de permisos
+    private val REQUEST_BACKGROUND_LOCATION_PERMISSION = 101
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -73,6 +74,9 @@ class MainActivity : AppCompatActivity() {
         //gestor para la barra de navegacion
         bottomNav()
         checkLocationPermission()
+
+        // Verificar si es necesario solicitar el permiso de ubicación en segundo plano
+        checkBackgroundLocationPermission()
 
     }
 
@@ -109,6 +113,31 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+
+    private fun checkBackgroundLocationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            if (ContextCompat.checkSelfPermission(
+                    this, android.Manifest.permission.ACCESS_BACKGROUND_LOCATION
+                ) != PackageManager.PERMISSION_GRANTED) {
+
+                // Mostrar una explicación si es necesario
+                if (ActivityCompat.shouldShowRequestPermissionRationale(this, android.Manifest.permission.ACCESS_BACKGROUND_LOCATION)) {
+                    // Explicar al usuario por qué se necesita este permiso
+                    showPermissionExplanationDialog()
+                } else {
+                        // Solicitar el permiso de ubicación en segundo plano
+                        ActivityCompat.requestPermissions(
+                            this,
+                            arrayOf(android.Manifest.permission.ACCESS_BACKGROUND_LOCATION),
+                            REQUEST_BACKGROUND_LOCATION_PERMISSION
+                        )
+                    }
+            }
+        }
+    }
+
+
+
     private fun checkAndEnableGPS() {
         val locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 5000)
             .setMinUpdateIntervalMillis(2000)
@@ -137,6 +166,24 @@ class MainActivity : AppCompatActivity() {
     private fun isGPSEnabled(context: Context): Boolean {
         val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
         return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+    }
+
+    // Método para mostrar un diálogo explicando por qué se necesita el permiso
+    private fun showPermissionExplanationDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Permiso de ubicación en segundo plano")
+            .setMessage("Este permiso es necesario para seguir rastreando la ubicación mientras la aplicación no está activa.")
+            .setPositiveButton("OK") { _, _ ->
+                // Solicitar el permiso de nuevo si el usuario lo entiende
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(android.Manifest.permission.ACCESS_BACKGROUND_LOCATION),
+                    REQUEST_BACKGROUND_LOCATION_PERMISSION
+                )
+            }
+            .setNegativeButton("Cancelar", null)
+            .create()
+            .show()
     }
 
     private fun showInContextUI() {
