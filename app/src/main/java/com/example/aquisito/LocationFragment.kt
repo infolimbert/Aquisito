@@ -11,6 +11,7 @@ import android.location.Geocoder
 import android.location.Location
 import android.location.LocationManager
 import android.os.Bundle
+import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
 import android.util.Log
@@ -37,13 +38,14 @@ import java.io.IOException
 class LocationFragment : Fragment() {
 
     private lateinit var locationUpdateReceiver: BroadcastReceiver
-
     // Variable privada para el binding, inicializada como nula
     private lateinit var locationBinding: FragmentLocationBinding
-
     // uso del broadcast
     private lateinit var gpsStatusReceiver: BroadcastReceiver
 
+
+    // Variable para controlar si TalkBack ya ha leído la ubicación una vez
+    private var hasAnnouncedLocation = false
 
     // Se infla el layout del fragmento y se inicializa el binding
     override fun onCreateView(
@@ -68,8 +70,24 @@ class LocationFragment : Fragment() {
         registerLocationReceiver()
 
 
+        // Iniciar el proceso de obtener la ubicación y hacer que TalkBack lo lea
+        announceLocationToTalkBackWithDelay()
+
     }
 
+    // Método para anunciar la ubicación solo una vez al iniciar
+    private fun announceLocationToTalkBackWithDelay() {
+        if (!hasAnnouncedLocation) {  // Solo lo ejecutamos si no ha sido anunciado antes
+            Handler(Looper.getMainLooper()).postDelayed({
+                locationBinding.tvLocation?.let {
+                    if (it.text.isNotEmpty() && it.text!= "Cerca de:\nUbicacion del sujeto") {
+                        it.announceForAccessibility(it.text)  // TalkBack lee el contenido
+                        hasAnnouncedLocation = true  // Marcamos que ya se ha leído una vez
+                    }
+                }
+            }, 2000)  // Ajusta el retraso si es necesario (2 segundos en este caso)
+        }
+    }
     private fun registerLocationReceiver(){
         locationUpdateReceiver = object : BroadcastReceiver(){
 
@@ -78,7 +96,7 @@ class LocationFragment : Fragment() {
                 val lgt = intent?.getDoubleExtra("longitud", 0.0)
                 val address = intent?.getStringExtra("address")
 
-                locationBinding.tvLocation.text = address
+                locationBinding.tvLocation.text = "Cerca de:\n$address"
             }
         }
         val intentFilter = IntentFilter("LocationUpdate")

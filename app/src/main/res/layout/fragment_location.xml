@@ -7,27 +7,17 @@
     tools:context=".LocationFragment">
 
 
-    <TextView
-        android:id="@+id/tvCercade"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Cerca de:"
-        android:textAppearance="?attr/textAppearanceSubtitle1"
-        android:layout_marginTop="@dimen/common_padding_default"
-        android:layout_marginLeft="@dimen/common_padding_default"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        />
 
     <TextView
         android:id="@+id/tvLocation"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Ubicacion del sujeto"
+        android:text="Cerca de:\nUbicacion del sujeto"
         android:textAppearance="?attr/textAppearanceHeadline6"
         android:layout_marginLeft="@dimen/common_padding_default"
+        android:layout_marginTop="@dimen/common_padding_default"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvCercade"
+        app:layout_constraintTop_toTopOf="parent"
         />
 
     <TextView
