@@ -9,6 +9,7 @@ import android.content.IntentFilter
 import android.content.IntentSender
 import android.content.pm.PackageManager
 import android.location.LocationManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -46,7 +47,7 @@ class MainActivity : AppCompatActivity() {
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            checkAndEnableGPS()
+            checkBackgroundLocationPermission()
         } else {
             Toast.makeText(this, "Permiso de ubicación denegado.", Toast.LENGTH_LONG).show()
         }
@@ -74,10 +75,42 @@ class MainActivity : AppCompatActivity() {
         //gestor para la barra de navegacion
         bottomNav()
         checkLocationPermission()
-
         // Verificar si es necesario solicitar el permiso de ubicación en segundo plano
-        checkBackgroundLocationPermission()
 
+        // Verificar si el permiso de segundo plano ya ha sido concedido
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+            ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            restartLocationUpdates()
+        }
+
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        if (requestCode == REQUEST_BACKGROUND_LOCATION_PERMISSION) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Log.d("MainActivity", "Permiso de ubicación en segundo plano concedido")
+                // Reiniciar las actualizaciones de ubicación
+                checkAndEnableGPS()
+                restartLocationUpdates()
+            } else {
+                Log.d("MainActivity", "Permiso de ubicación en segundo plano denegado")
+            }
+        }
+    }
+
+    private fun restartLocationUpdates() {
+        val serviceIntent = Intent(this, LocationService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent)  // Usar startForegroundService para Android O y superior
+        } else {
+            startService(serviceIntent)
+        }
     }
 
 
@@ -99,7 +132,7 @@ class MainActivity : AppCompatActivity() {
                 this,
                 android.Manifest.permission.ACCESS_FINE_LOCATION
             ) == PackageManager.PERMISSION_GRANTED -> {
-                checkAndEnableGPS()
+                checkBackgroundLocationPermission()
             }
             ActivityCompat.shouldShowRequestPermissionRationale(
                 this,
@@ -132,9 +165,16 @@ class MainActivity : AppCompatActivity() {
                             REQUEST_BACKGROUND_LOCATION_PERMISSION
                         )
                     }
+            }else {
+                // Si el permiso ya fue concedido, habilitamos el GPS
+                checkAndEnableGPS()
             }
+        } else {
+            // Si estamos en una versión anterior a Android Q, habilitamos el GPS directamente
+            checkAndEnableGPS()
         }
     }
+
 
 
 
@@ -192,14 +232,25 @@ class MainActivity : AppCompatActivity() {
                 .setTitle("Permiso de ubicación necesario")
                 .setMessage("Esta aplicación necesita acceso a la ubicación para funcionar correctamente. Por favor, permite el acceso para continuar.")
                 .setPositiveButton("OK") { _, _ ->
-                    requestPermissionLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+                    // Verificar si el permiso ha sido rechazado permanentemente (No volver a preguntar)
+                    if (ActivityCompat.shouldShowRequestPermissionRationale(this, android.Manifest.permission.ACCESS_FINE_LOCATION)) {
+                        // Si el usuario NO ha seleccionado "No volver a preguntar", vuelve a solicitar el permiso
+                        requestPermissionLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+                    } else {
+                        // Si el usuario ha seleccionado "No volver a preguntar", llevarlo a la configuración de la app
+                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                        val uri = Uri.fromParts("package", packageName, null)
+                        intent.data = uri
+                        startActivity(intent)
+                    }
                 }
                 .setNegativeButton("Cancelar", null)
                 .show()
+        }
 
         }
 
-    }
+
     private fun bottomNav(){
 
         mBinding.bottomNav.setOnItemSelectedListener { menuItem ->
