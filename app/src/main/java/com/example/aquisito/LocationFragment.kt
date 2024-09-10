@@ -80,12 +80,12 @@ class LocationFragment : Fragment() {
         if (!hasAnnouncedLocation) {  // Solo lo ejecutamos si no ha sido anunciado antes
             Handler(Looper.getMainLooper()).postDelayed({
                 locationBinding.tvLocation?.let {
-                    if (it.text.isNotEmpty() && it.text!= "Cerca de:\nUbicacion del sujeto") {
+                    if (it.text.isNotEmpty() && it.text!= "Cerca de:") {
                         it.announceForAccessibility(it.text)  // TalkBack lee el contenido
                         hasAnnouncedLocation = true  // Marcamos que ya se ha leído una vez
                     }
                 }
-            }, 2000)  // Ajusta el retraso si es necesario (2 segundos en este caso)
+            }, 3000)  // Ajusta el retraso si es necesario (2 segundos en este caso)
         }
     }
     private fun registerLocationReceiver(){
