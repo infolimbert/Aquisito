@@ -1,47 +1,33 @@
 package com.example.aquisito
 
-import android.Manifest
+
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.IntentSender
-import android.content.pm.PackageManager
-import android.location.Geocoder
-import android.location.Location
 import android.location.LocationManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.provider.Settings
+import android.speech.tts.TextToSpeech
 import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.ui.text.intl.Locale
-import androidx.core.content.ContextCompat
-import androidx.core.location.LocationManagerCompat.isLocationEnabled
 import com.example.aquisito.databinding.FragmentLocationBinding
-import com.google.android.gms.common.api.ResolvableApiException
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationCallback
-import com.google.android.gms.location.LocationRequest
-import com.google.android.gms.location.LocationResult
-import com.google.android.gms.location.LocationServices
-import com.google.android.gms.location.LocationSettingsRequest
-import com.google.android.gms.location.Priority
-import java.io.IOException
+import java.util.Locale
 
-class LocationFragment : Fragment() {
+class LocationFragment : Fragment(), TextToSpeech.OnInitListener {
 
     private lateinit var locationUpdateReceiver: BroadcastReceiver
     // Variable privada para el binding, inicializada como nula
     private lateinit var locationBinding: FragmentLocationBinding
     // uso del broadcast
     private lateinit var gpsStatusReceiver: BroadcastReceiver
+
+    // inicializacion del texttospeach
+    private lateinit var tts: TextToSpeech
 
 
     // Variable para controlar si TalkBack ya ha leído la ubicación una vez
@@ -56,23 +42,48 @@ class LocationFragment : Fragment() {
         locationBinding = FragmentLocationBinding.inflate(inflater, container, false)
         return locationBinding.root
 
+
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+
         // Iniciar el servicio de ubicación
         val serviceIntent = Intent(requireContext(), LocationService::class.java)
         requireContext().startService(serviceIntent)
-
         registerGPSStatusReceiver()
         // Registrar el BroadcastReceiver para escuchar las actualizaciones de ubicación
         registerLocationReceiver()
 
+        // Configura el listener para tocar la pantalla
+        tts = TextToSpeech(requireContext(), this)  // Inicializa TTS
+
+        // Configura el listener para tocar la pantalla
+        locationBinding.root.setOnClickListener {
+            val address = locationBinding.tvLocation.text.toString()
+            if (address.isNotEmpty()) {
+                speakLocation(address)
+            }
+        }
 
         // Iniciar el proceso de obtener la ubicación y hacer que TalkBack lo lea
         announceLocationToTalkBackWithDelay()
 
+    }
+
+
+    override fun onInit(status: Int) {
+        if (status == TextToSpeech.SUCCESS) {
+            val result = tts.setLanguage(Locale("es", "ES"))  // Configura el idioma español
+            if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                Log.e("TTS", "El idioma no está soportado.")
+            }
+        }
+    }
+
+    private fun speakLocation(address: String) {
+        tts.speak(address, TextToSpeech.QUEUE_FLUSH, null, "")
     }
 
     // Método para anunciar la ubicación solo una vez al iniciar
@@ -147,6 +158,9 @@ class LocationFragment : Fragment() {
         requireContext().unregisterReceiver(gpsStatusReceiver)
         // Desregistrar el BroadcastReceiver cuando el fragmento se destruye
         requireContext().unregisterReceiver(locationUpdateReceiver)
+
+        //detenemos el motor tts
+        tts.shutdown()
 
     }
 
