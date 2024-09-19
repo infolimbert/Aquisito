@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.location.LocationManager
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -17,6 +18,7 @@ import android.view.View
 import android.view.ViewGroup
 import com.example.aquisito.databinding.FragmentLocationBinding
 import java.util.Locale
+
 
 class LocationFragment : Fragment(), TextToSpeech.OnInitListener {
 
@@ -51,7 +53,11 @@ class LocationFragment : Fragment(), TextToSpeech.OnInitListener {
 
         // Iniciar el servicio de ubicación
         val serviceIntent = Intent(requireContext(), LocationService::class.java)
-        requireContext().startService(serviceIntent)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            requireContext().startForegroundService(serviceIntent)  // Para Android 8.0 y superior
+        } else {
+            requireContext().startService(serviceIntent)  // Para versiones anteriores
+        }
         registerGPSStatusReceiver()
         // Registrar el BroadcastReceiver para escuchar las actualizaciones de ubicación
         registerLocationReceiver()
@@ -63,12 +69,13 @@ class LocationFragment : Fragment(), TextToSpeech.OnInitListener {
         locationBinding.root.setOnClickListener {
             val address = locationBinding.tvLocation.text.toString()
             if (address.isNotEmpty()) {
-                speakLocation(address)
+                speakLocation()
             }
         }
 
         // Iniciar el proceso de obtener la ubicación y hacer que TalkBack lo lea
         announceLocationToTalkBackWithDelay()
+
 
     }
 
@@ -82,8 +89,11 @@ class LocationFragment : Fragment(), TextToSpeech.OnInitListener {
         }
     }
 
-    private fun speakLocation(address: String) {
-        tts.speak(address, TextToSpeech.QUEUE_FLUSH, null, "")
+   fun speakLocation() {
+       val text = locationBinding.tvLocation.text
+       if (text.isNotEmpty()) {
+           tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
+       }
     }
 
     // Método para anunciar la ubicación solo una vez al iniciar
@@ -161,6 +171,7 @@ class LocationFragment : Fragment(), TextToSpeech.OnInitListener {
 
         //detenemos el motor tts
         tts.shutdown()
+        // Detener y liberar la sesión multimedia cuando el fragmento se destruye
 
     }
 

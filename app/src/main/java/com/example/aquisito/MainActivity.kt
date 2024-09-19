@@ -2,6 +2,7 @@ package com.example.aquisito
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -38,6 +39,9 @@ class MainActivity : AppCompatActivity() {
     private val locationFragment = LocationFragment()
     private val routeFragment = RouteFragment()
     private val configFragment = ConfigFragment()
+
+    private var mediaSession: MediaSession? = null
+
 
 
     // Código de solicitud de permisos
@@ -82,6 +86,13 @@ class MainActivity : AppCompatActivity() {
             ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             restartLocationUpdates()
         }
+
+
+        // Iniciar MediaSession automáticamente al abrir la aplicación
+        mediaSession = MediaSession()
+        mediaSession?.start(this)
+        // Pasamos el fragmento al Model
+        Model.setLocationFragment(locationFragment)
 
     }
 
@@ -311,6 +322,11 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         stopLocationService()  // Detener el servicio cuando la actividad se destruya
+
+        // Liberar la MediaSession cuando se destruye la actividad
+        mediaSession?.stop(this)
+
+
     }
 
 
