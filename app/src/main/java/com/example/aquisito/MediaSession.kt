@@ -18,7 +18,7 @@ class MediaSession {
     private var callback: MediaSessionCompat.Callback? = null
 
     fun start(context: Context) {
-        Model.initializeTTS(context) // Inicializamos TTS
+//Model.initializeTTS(context) // Inicializamos TTS
         callback = object : MediaSessionCompat.Callback() {
             override fun onMediaButtonEvent(intent: Intent): Boolean {
                 if (intent.action != Intent.ACTION_MEDIA_BUTTON) return false
@@ -53,7 +53,6 @@ class MediaSession {
         session = null
         callback = null
         stopPlayer()
-        Model.releaseTTS() // Liberamos TTS cuando detenemos la sesión
 
         //probando
         session?.isActive =false

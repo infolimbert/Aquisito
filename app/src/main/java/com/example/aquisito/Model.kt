@@ -23,21 +23,6 @@ import java.util.Locale
         private val _lastMediaEvent: Subject<String> = BehaviorSubject.createDefault("")
     val lastMediaEvent: Observable<String> = _lastMediaEvent
 
-    private var tts: TextToSpeech? = null
-
-
-    // Inicializamos el TTS
-    fun initializeTTS(context: Context) {
-        tts = TextToSpeech(context) { status ->
-            if (status == TextToSpeech.SUCCESS) {
-                tts?.language = Locale.getDefault()
-                Log.i("TTS", "TextToSpeech inicializado correctamente")
-            } else {
-                Log.e("TTS", "Error al inicializar TextToSpeech")
-            }
-        }
-    }
-
     // Maneja los eventos de teclas multimedia y verifica si es el botón de "Play"
     fun onMediaKeyEvent(event: KeyEvent, context: Context) {
         Log.i("MEDIA SESSION SAMPLE", "Media key $event")
@@ -61,14 +46,4 @@ import java.util.Locale
         }
     }
 
-    // Función para hacer que TTS hable el texto
-    private fun speakText(context: Context, text: String) {
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
-    }
-
-    // Liberamos los recursos del TTS
-    fun releaseTTS() {
-        tts?.stop()
-        tts?.shutdown()
-    }
 }
