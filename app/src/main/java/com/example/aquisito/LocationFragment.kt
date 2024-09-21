@@ -66,7 +66,7 @@ class LocationFragment : Fragment(), TextToSpeech.OnInitListener {
         tts = TextToSpeech(requireContext(), this)  // Inicializa TTS
 
         // Configura el listener para tocar la pantalla
-        locationBinding.root.setOnClickListener {
+        locationBinding.tvLocation.setOnClickListener {
             val address = locationBinding.tvLocation.text.toString()
             if (address.isNotEmpty()) {
                 speakLocation()
@@ -106,7 +106,7 @@ class LocationFragment : Fragment(), TextToSpeech.OnInitListener {
                         hasAnnouncedLocation = true  // Marcamos que ya se ha leído una vez
                     }
                 }
-            }, 3000)  // Ajusta el retraso si es necesario (2 segundos en este caso)
+            }, 6000)  // Ajusta el retraso si es necesario (2 segundos en este caso)
         }
     }
     private fun registerLocationReceiver(){

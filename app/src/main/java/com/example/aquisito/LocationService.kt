@@ -27,8 +27,8 @@ class LocationService: Service() {
 
 
     private val locationRequest: LocationRequest by lazy {
-        LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 2000)
-            .setMinUpdateIntervalMillis(2000)
+        LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 5000)
+            .setMinUpdateIntervalMillis(5000)
             .build()
     }
 
@@ -56,7 +56,8 @@ class LocationService: Service() {
         //conttinua ejecutando las actualizaciones de ubicacion
         startLocationUpdates()
 
-        return super.onStartCommand(intent, flags, startId)
+        //return super.onStartCommand(intent, flags, startId)
+        return START_STICKY
     }
 
 
