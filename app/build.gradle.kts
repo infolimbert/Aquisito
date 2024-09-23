@@ -78,6 +78,9 @@ dependencies {
     implementation ("androidx.fragment:fragment-ktx:1.8.2")
     implementation ("com.google.android.gms:play-services-maps:19.0.0")
     implementation("com.google.android.gms:play-services-location:21.3.0")
+    //para los POIS
+    implementation("com.squareup.okhttp3:okhttp:4.9.3")
+
 
     //mediasession
     implementation("androidx.legacy:legacy-support-v4:1.0.0")

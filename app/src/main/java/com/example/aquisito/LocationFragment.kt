@@ -113,11 +113,14 @@ class LocationFragment : Fragment(), TextToSpeech.OnInitListener {
         locationUpdateReceiver = object : BroadcastReceiver(){
 
             override  fun onReceive(context: Context?, intent: Intent){
-                val lat = intent?.getDoubleExtra("latitud", 0.0)
-                val lgt = intent?.getDoubleExtra("longitud", 0.0)
                 val address = intent?.getStringExtra("address")
+                val namePOI = intent?.getStringExtra("namePOI")
 
-                locationBinding.tvLocation.text = "Cerca de:\n$address"
+                if (namePOI=="No se encontraron POIs cercanos."|| namePOI=="Error al procesar la respuesta.")
+                {locationBinding.tvLocation.text = "Estás en:\n$address."}
+                else{
+                    locationBinding.tvLocation.text = "Estás en:\n$address\nEn un radio de 10 metros, puedes encontrar:bdefgvw $namePOI"
+                }
             }
         }
         val intentFilter = IntentFilter("LocationUpdate")
