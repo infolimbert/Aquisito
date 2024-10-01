@@ -1,6 +1,8 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    // Add the dependency for the Google services Gradle plugin
+    id("com.google.gms.google-services")
 
 
 }
@@ -32,8 +34,11 @@ android {
         }
     }
 
-    viewBinding{
+    /*viewBinding{
         enable= true
+    }*/
+    buildFeatures{
+        viewBinding = true
     }
 
     compileOptions {
@@ -78,8 +83,17 @@ dependencies {
     implementation ("androidx.fragment:fragment-ktx:1.8.2")
     implementation ("com.google.android.gms:play-services-maps:19.0.0")
     implementation("com.google.android.gms:play-services-location:21.3.0")
+
     //para los POIS
     implementation("com.squareup.okhttp3:okhttp:4.9.3")
+
+    //para la autenthicacion gmail
+    implementation("com.firebaseui:firebase-ui-auth:8.0.2")
+    implementation(platform("com.google.firebase:firebase-bom:33.3.0"))
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.android.gms:play-services-auth:20.7.0")
+
+
 
 
     //mediasession

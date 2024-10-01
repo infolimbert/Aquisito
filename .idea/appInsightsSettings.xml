@@ -8,10 +8,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.example.aquisito" />
+                  <option name="mobileSdkAppId" value="1:704841500860:android:2b2bb00a15ec6277fc28b9" />
+                  <option name="projectId" value="aquisito-ab318" />
+                  <option name="projectNumber" value="704841500860" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

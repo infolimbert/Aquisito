@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "704841500860",
+    "project_id": "aquisito-ab318",
+    "storage_bucket": "aquisito-ab318.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:704841500860:android:2b2bb00a15ec6277fc28b9",
+        "android_client_info": {
+          "package_name": "com.example.aquisito"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "704841500860-9m114fn2dceupg312aliq6n1t6euse7b.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAARBO9EtQ95JHWA8R7TiT2MstUou1iCcU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "704841500860-9m114fn2dceupg312aliq6n1t6euse7b.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
