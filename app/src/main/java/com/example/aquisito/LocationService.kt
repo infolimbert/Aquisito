@@ -125,9 +125,9 @@ class LocationService: Service() {
                     if (addresses.isNotEmpty()) {
                         val address = addresses[0]
                         val addressText = if (address.thoroughfare != null) {
-                            "${address.thoroughfare}, ${address.locality}, ${address.countryName}"
+                            "${address.thoroughfare}, ${address.locality}, ${address.countryName}, ${address.featureName}"
                         } else {
-                            "Calle sin nombre designado, ${address.locality}, ${address.countryName}"
+                            "Calle sin nombre designado, ${address.locality}, ${address.countryName}, ${address.featureName}"
                         }
                         sendLocationUpdate(location.latitude, location.longitude, addressText)
                     } else {sendLocationUpdate(location.latitude, location.longitude, "No hay dirección")
@@ -144,9 +144,9 @@ class LocationService: Service() {
             val address = geocoder.getFromLocation(location.latitude, location.longitude, 1)
             if (!address.isNullOrEmpty( ) ) {
                 val addressText = if (address[0].thoroughfare !=null)
-                {"${address[0].thoroughfare}, ${address[0].locality}, ${address[0].countryName} "
+                {"${address[0].thoroughfare}, ${address[0].locality}, ${address[0].countryName}, ${address[0].featureName} "
                 } else {
-                    "Calle sin nombre designado, ${address[0].locality} ,  ${address[0].countryName}"
+                    "Calle sin nombre designado, ${address[0].locality} ,  ${address[0].countryName}, ${address[0].featureName}"
                 }
                 sendLocationUpdate(location. latitude,  location.longitude, addressText)
             }else {
@@ -172,8 +172,8 @@ class LocationService: Service() {
 
     private fun fetchNearbyPOI(lat: Double, lng: Double, onResult: (String) -> Unit){
         // URL de Overpass API con latitud y longitud dinámicas
-        val radius= 15 //en metros
-        val url = "https://overpass-api.de/api/interpreter?data=[out:json];node(around:20,$lat,$lng)[leisure=park];node(around:$radius,$lat,$lng)[amenity~\"university|place_of_worship|bank\"];out;"
+        val radius= 20 //en metros
+        val url = "https://overpass-api.de/api/interpreter?data=[out:json];node(around:30,$lat,$lng)[place=square];node(around:$radius,$lat,$lng)[amenity~\"university|place_of_worship|bank\"];node(around:$radius,$lat,$lng)[office=government];out;"
 
         // usar okHttp para hcer la solicitud HTTP
         val client = OkHttpClient()

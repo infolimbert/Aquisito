@@ -119,7 +119,7 @@ class LocationFragment : Fragment(), TextToSpeech.OnInitListener {
                 if (namePOI=="No se encontraron POIs cercanos."|| namePOI=="Error al procesar la respuesta.")
                 {locationBinding.tvLocation.text = "Estás en:\n$address."}
                 else{
-                    locationBinding.tvLocation.text = "Estás en:\n$address\nEn un radio de 10 metros, puedes encontrar:$namePOI"
+                    locationBinding.tvLocation.text = "Estás en:\n$address\nEn un radio de 10 metros, puedes encontrar: $namePOI"
                 }
             }
         }
