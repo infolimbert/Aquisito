@@ -39,7 +39,7 @@ class LocationFragment : Fragment(), TextToSpeech.OnInitListener {
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
 
         locationBinding = FragmentLocationBinding.inflate(inflater, container, false)
         return locationBinding.root
@@ -100,7 +100,7 @@ class LocationFragment : Fragment(), TextToSpeech.OnInitListener {
     private fun announceLocationToTalkBackWithDelay() {
         if (!hasAnnouncedLocation) {  // Solo lo ejecutamos si no ha sido anunciado antes
             Handler(Looper.getMainLooper()).postDelayed({
-                locationBinding.tvLocation?.let {
+                locationBinding.tvLocation.let {
                     if (it.text.isNotEmpty() && it.text!= "Cerca de:") {
                         it.announceForAccessibility(it.text)  // TalkBack lee el contenido
                         hasAnnouncedLocation = true  // Marcamos que ya se ha leído una vez
@@ -112,17 +112,26 @@ class LocationFragment : Fragment(), TextToSpeech.OnInitListener {
     private fun registerLocationReceiver(){
         locationUpdateReceiver = object : BroadcastReceiver(){
 
-            override  fun onReceive(context: Context?, intent: Intent){
-                val address = intent?.getStringExtra("address")
-                val namePOI = intent?.getStringExtra("namePOI")
+            override  fun onReceive(context: Context?, intent: Intent) {
+                if (isAdded && context != null) { // Verificar si el fragmento está adjunto a la actividad
+                    val address = intent.getStringExtra("address")
+                    val namePOI = intent.getStringExtra("namePOI")
 
-                if (namePOI=="No se encontraron POIs cercanos."|| namePOI=="Error al procesar la respuesta.")
-                {locationBinding.tvLocation.text = "Estás en:\n$address."}
-                else{
-                    locationBinding.tvLocation.text = "Estás en:\n$address\nEn un radio de 10 metros, puedes encontrar: $namePOI"
+                    if (namePOI == "No se encontraron POIs cercanos." || namePOI == "Error al procesar la respuesta.") {
+                        locationBinding.tvLocation.text =
+                            getString(R.string.texto_estas_en, address)
+                    } else {
+                        locationBinding.tvLocation.text =
+                            getString(R.string.location_message_with_poi, address, namePOI)
+
+                    }
+
+                } else {
+                    Log.w("LocationFragment", "El fragmento no está adjunto a la actividad.")
                 }
+
             }
-        }
+}
         val intentFilter = IntentFilter("LocationUpdate")
         requireContext().registerReceiver(locationUpdateReceiver, intentFilter)
     }
@@ -145,14 +154,14 @@ class LocationFragment : Fragment(), TextToSpeech.OnInitListener {
     //recibe la respuesta y cambie el tvlocation
     private fun updateGPSStatus() {
         if (!isGPSEnabled(requireContext())) {
-            locationBinding.tvLocation.text = "GPS deshabilitado. Actívelo para usar esta función."
+            locationBinding.tvLocation.text = getString(R.string.message_GPS_deshabilitado)
         } else {
-            locationBinding.tvLocation.text = "GPS habilitado. Obteniendo ubicación..."
+            locationBinding.tvLocation.text = getString(R.string.message_GPS_habilitado)
             Log.d("LocationFragment", "GPS habilitado. Esperando actualizaciones de ubicación...")
         }
     }
     // funcion que envia una respuesta bollean de false o true para ver si el gps esta hablitado
-    fun isGPSEnabled(context: Context): Boolean {
+    private fun isGPSEnabled(context: Context): Boolean {
         val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
         return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
     }
@@ -167,16 +176,23 @@ class LocationFragment : Fragment(), TextToSpeech.OnInitListener {
 
     override fun onDestroy() {
         super.onDestroy()
-        // Asegúrate de desregistrar el BroadcastReceiver para evitar fugas de memoria
-        requireContext().unregisterReceiver(gpsStatusReceiver)
-        // Desregistrar el BroadcastReceiver cuando el fragmento se destruye
-        requireContext().unregisterReceiver(locationUpdateReceiver)
-
-        //detenemos el motor tts
-        tts.shutdown()
-        // Detener y liberar la sesión multimedia cuando el fragmento se destruye
+        Log.d("LocationFragment", "onStop() llamado. Fragmento ya no está visible.")
+        unRegisterReceivers()
 
     }
+
+
+    private fun unRegisterReceivers() {
+// Asegúrate de desregistrar el BroadcastReceiver para evitar fugas de memoria
+        requireContext().unregisterReceiver(gpsStatusReceiver)
+        Log.d("LocationFragment", "gpsStatusReceiver desregistrado")
+        // Desregistrar el BroadcastReceiver cuando el fragmento se destruye
+        requireContext().unregisterReceiver(locationUpdateReceiver)
+        Log.d("LocationFragment", "locationUpdateReceiver desregistrado")
+        //detenemos el motor tts
+        tts.shutdown()
+        Log.d("LocationFragment", "TextToSpeech apagado")
+}
 
 
 }

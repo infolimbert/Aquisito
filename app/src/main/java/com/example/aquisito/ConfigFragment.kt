@@ -1,6 +1,5 @@
 package com.example.aquisito
 
-import android.content.Intent
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
@@ -10,6 +9,7 @@ import android.widget.Toast
 import com.example.aquisito.databinding.FragmentConfigBinding
 import com.firebase.ui.auth.AuthUI
 import com.google.firebase.auth.FirebaseAuth
+import kotlin.system.exitProcess
 
 
 class ConfigFragment : Fragment() {
@@ -18,7 +18,7 @@ class ConfigFragment : Fragment() {
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?): View? {
+        savedInstanceState: Bundle?): View {
         configBinding = FragmentConfigBinding.inflate(inflater, container, false)
         // Inflate the layout for this fragment
 
@@ -38,12 +38,12 @@ class ConfigFragment : Fragment() {
             //cerrar sesion
             auth.signOut()
             // Además de signOut(), también limpia las credenciales de Firebase UI
-            AuthUI.getInstance().signOut(requireContext()).addOnCompleteListener {
+            AuthUI.getInstance().signOut(requireContext()
+            ).addOnCompleteListener {
                 Toast.makeText(requireContext(), "Sesión cerrada", Toast.LENGTH_SHORT).show()
-                // Redirige al usuario al SplashActivity o pantalla de inicio
-                val intent = Intent(requireContext(), SplashActivity::class.java)
-                startActivity(intent)
-                requireActivity().finish() // Finaliza la actividad actual
+                // Finalizar todas las actividades y cerrar la aplicación
+                requireActivity().finishAffinity()
+                exitProcess(0)  // Garantiza que la aplicación se cierra completamente
             }
 
         }

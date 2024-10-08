@@ -173,7 +173,7 @@ class LocationService: Service() {
     private fun fetchNearbyPOI(lat: Double, lng: Double, onResult: (String) -> Unit){
         // URL de Overpass API con latitud y longitud dinámicas
         val radius= 20 //en metros
-        val url = "https://overpass-api.de/api/interpreter?data=[out:json];node(around:30,$lat,$lng)[place=square];node(around:$radius,$lat,$lng)[amenity~\"university|place_of_worship|bank\"];node(around:$radius,$lat,$lng)[office=government];out;"
+        val url = "https://overpass-api.de/api/interpreter?data=[out:json];node(around:$radius,$lat,$lng)[amenity~\"university|place_of_worship|bank\"];node(around:$radius,$lat,$lng)[office=government];out;"
 
         // usar okHttp para hcer la solicitud HTTP
         val client = OkHttpClient()
