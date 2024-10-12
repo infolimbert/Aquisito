@@ -26,6 +26,7 @@ import okhttp3.Response
 import org.json.JSONObject
 import java.io.IOException
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class LocationService: Service() {
 
@@ -176,7 +177,11 @@ class LocationService: Service() {
         val url = "https://overpass-api.de/api/interpreter?data=[out:json];node(around:$radius,$lat,$lng)[amenity~\"university|place_of_worship|bank\"];node(around:$radius,$lat,$lng)[office=government];out;"
 
         // usar okHttp para hcer la solicitud HTTP
-        val client = OkHttpClient()
+        val client = OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .build()
 
         val request = Request.Builder()
             .url(url)
@@ -216,7 +221,16 @@ class LocationService: Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        fusedLocationClient.removeLocationUpdates(locationCallback)  // Detener las actualizaciones cuando se destruye el servicio
+        // Detener las actualizaciones de ubicación
+        fusedLocationClient.removeLocationUpdates(locationCallback)
+        Log.d("LocationServicio","Servicio detenido")
+
+        // Eliminar la notificación del servicio en primer plano (si se inició con startForeground())
+        stopForeground(STOP_FOREGROUND_REMOVE)
+
+        // Detener el servicio
+        val serviceIntent = Intent(this, LocationService::class.java)
+        stopService(serviceIntent)
     }
 
 }

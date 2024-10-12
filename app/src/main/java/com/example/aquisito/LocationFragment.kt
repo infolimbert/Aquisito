@@ -16,6 +16,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.example.aquisito.databinding.FragmentLocationBinding
 import java.util.Locale
 
@@ -113,35 +114,49 @@ class LocationFragment : Fragment(), TextToSpeech.OnInitListener {
         locationUpdateReceiver = object : BroadcastReceiver(){
 
             override  fun onReceive(context: Context?, intent: Intent) {
-                if (isAdded && context != null) { // Verificar si el fragmento está adjunto a la actividad
-                    val address = intent.getStringExtra("address")
-                    val namePOI = intent.getStringExtra("namePOI")
 
-                    if (namePOI == "No se encontraron POIs cercanos." || namePOI == "Error al procesar la respuesta.") {
-                        locationBinding.tvLocation.text =
-                            getString(R.string.texto_estas_en, address)
+                Handler(Looper.getMainLooper()).post {
+                    if (isAdded && context != null) { // Verificar si el fragmento está adjunto a la actividad
+                        val address = intent.getStringExtra("address")
+                        val namePOI = intent.getStringExtra("namePOI")
+
+                        if (namePOI == "No se encontraron POIs cercanos." || namePOI == "Error al procesar la respuesta.") {
+                            locationBinding.tvLocation.text =
+                                getString(R.string.texto_estas_en, address)
+                        } else {
+                            locationBinding.tvLocation.text =
+                                getString(R.string.location_message_with_poi, address, namePOI)
+
+                        }
+
                     } else {
-                        locationBinding.tvLocation.text =
-                            getString(R.string.location_message_with_poi, address, namePOI)
-
+                        Log.w(
+                            "LocationFragment",
+                            "El fragmento no está adjunto a la actividad. BROADCAST CALL UBICACION"
+                        )
                     }
-
-                } else {
-                    Log.w("LocationFragment", "El fragmento no está adjunto a la actividad.")
                 }
 
             }
 }
         val intentFilter = IntentFilter("LocationUpdate")
-        requireContext().registerReceiver(locationUpdateReceiver, intentFilter)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+           requireContext().registerReceiver(locationUpdateReceiver, intentFilter, Context.RECEIVER_NOT_EXPORTED)
+            //LocalBroadcastManager.getInstance(requireContext()).registerReceiver(locationUpdateReceiver, intentFilter)
+        }
     }
 
 
     private fun registerGPSStatusReceiver() {
             gpsStatusReceiver = object : BroadcastReceiver() {
                 override fun onReceive(context: Context?, intent: Intent?) {
-                    if (intent?.action == LocationManager.PROVIDERS_CHANGED_ACTION) {
-                        updateGPSStatus()
+
+                    if (isAdded && context != null) {
+                        if (intent?.action == LocationManager.PROVIDERS_CHANGED_ACTION) {
+                            updateGPSStatus()
+                        }
+                    } else {
+                        Log.w("LocationFragment", "El fragmento no está adjunto a la actividad. GPS STATUS")
                     }
                 }
             }
@@ -153,11 +168,15 @@ class LocationFragment : Fragment(), TextToSpeech.OnInitListener {
 
     //recibe la respuesta y cambie el tvlocation
     private fun updateGPSStatus() {
+        if (isAdded) {
         if (!isGPSEnabled(requireContext())) {
             locationBinding.tvLocation.text = getString(R.string.message_GPS_deshabilitado)
         } else {
             locationBinding.tvLocation.text = getString(R.string.message_GPS_habilitado)
             Log.d("LocationFragment", "GPS habilitado. Esperando actualizaciones de ubicación...")
+        }
+        } else {
+            Log.w("LocationFragment", "El fragmento no está adjunto a la actividad.")
         }
     }
     // funcion que envia una respuesta bollean de false o true para ver si el gps esta hablitado
@@ -172,27 +191,22 @@ class LocationFragment : Fragment(), TextToSpeech.OnInitListener {
             registerLocationReceiver()
 
     }
-
-
     override fun onDestroy() {
         super.onDestroy()
-        Log.d("LocationFragment", "onStop() llamado. Fragmento ya no está visible.")
-        unRegisterReceivers()
-
-    }
-
-
-    private fun unRegisterReceivers() {
-// Asegúrate de desregistrar el BroadcastReceiver para evitar fugas de memoria
+        Log.d("LocationFragment", "onDestroy() llamado. Fragmento ya no está visible.")
         requireContext().unregisterReceiver(gpsStatusReceiver)
         Log.d("LocationFragment", "gpsStatusReceiver desregistrado")
-        // Desregistrar el BroadcastReceiver cuando el fragmento se destruye
+
+        //LocalBroadcastManager.getInstance(requireContext()).unregisterReceiver(locationUpdateReceiver)
         requireContext().unregisterReceiver(locationUpdateReceiver)
         Log.d("LocationFragment", "locationUpdateReceiver desregistrado")
         //detenemos el motor tts
         tts.shutdown()
         Log.d("LocationFragment", "TextToSpeech apagado")
-}
+
+    }
 
 
 }
+
+

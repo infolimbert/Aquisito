@@ -101,6 +101,9 @@ dependencies {
     implementation("androidx.media:media:1.7.0")
     implementation("io.reactivex.rxjava3:rxjava:3.1.3")
 
+    //trazado de ruta
+
+
 
 
     implementation("androidx.appcompat:appcompat:1.7.0")

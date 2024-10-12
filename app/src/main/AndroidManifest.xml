@@ -50,6 +50,14 @@
             </intent-filter>
         </receiver>
 
+        <receiver
+            android:name=".LocationFragment"
+            android:exported="false">  <!-- O false -->
+            <intent-filter>
+                <action android:name="LocationUpdate" />
+            </intent-filter>
+        </receiver>
+
     </application>
 
 </manifest>

@@ -37,6 +37,7 @@ class ConfigFragment : Fragment() {
         configBinding.btnSignOut.setOnClickListener {
             //cerrar sesion
             auth.signOut()
+            deleteSharePreference()
             // Además de signOut(), también limpia las credenciales de Firebase UI
             AuthUI.getInstance().signOut(requireContext()
             ).addOnCompleteListener {
@@ -48,6 +49,12 @@ class ConfigFragment : Fragment() {
 
         }
         return configBinding.root
+    }
+
+    private fun deleteSharePreference(){
+        // Obtener la instancia del RouteFragment
+        val routeFragment = parentFragmentManager.findFragmentById(R.id.hostFragment) as? RouteFragment
+        routeFragment?.removeHomeLocation() // Llama al método para eliminar la dirección de casa
     }
 
 
